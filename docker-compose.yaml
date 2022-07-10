@@ -1,0 +1,41 @@
+version: '3.9'
+
+services:
+  mariadb:
+    image: mariadb:10
+    ports:
+      - 127.0.0.1:3306:3306
+    volumes:
+      - ./sql/:/docker-entrypoint-initdb.d/:ro
+    #  - ~/data/mariadb:/var/lib/mysql
+    environment:
+      - MARIADB_ROOT_PASSWORD=${DB_PASS}
+  
+  user-service:
+    restart: always
+    build:
+      context: ./user-service/
+      dockerfile: Dockerfile
+    ports:
+      - 3001:3000
+    image: frankoslaw/user-service:latest
+    environment:
+      - DB_HOST=mariadb
+    links:
+      - mariadb
+
+  competition-service:
+    restart: always
+    build:
+      context: ./competition-service/
+      dockerfile: Dockerfile
+    ports:
+      - 3002:3000
+    image: frankoslaw/competition-service:latest
+    environment:
+      - DB_HOST=mariadb
+      - USERSERVICE_HOST=user-service
+      - USERSERVICE_PORT=3000
+    links:
+      - mariadb
+      - user-service
